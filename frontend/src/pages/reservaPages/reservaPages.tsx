@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Title, Form, Input, Button, DeleteModal, ModalContent, ModalButton, ModalButtonContainer } from './styles';
-import { createReserva, listReserva, deleteReserva, updateReserva, listDistinctByContato, listDistinctByMesa } from '../../service/api';
+import { createReserva, listReserva, deleteReserva, updateReserva } from '../../service/api';
 import moment from 'moment';
 
 const RegisterReserva: React.FC = () => {
@@ -10,9 +10,6 @@ const RegisterReserva: React.FC = () => {
   const [data, setData] = useState('');
   const [status, setStatus] = useState('Confirmada'); // Novo estado para status da reserva
   const [reservas, setReservas] = useState<any[]>([]);
-  const [filteredReservas, setFilteredReservas] = useState<any[]>([]); // Estado para armazenar as reservas filtradas
-  const [distinctContatos, setDistinctContatos] = useState<string[]>([]); // Para armazenar os contatos distintos
-  const [distinctMesas, setDistinctMesas] = useState<number[]>([]); // Para armazenar as mesas distintas
   const [editingReserva, setEditingReserva] = useState<any | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [message, setMessage] = useState('');
@@ -22,16 +19,12 @@ const RegisterReserva: React.FC = () => {
       try {
         const response = await listReserva({});
         setReservas(response.data.reservas);
-        setFilteredReservas(response.data.reservas); // Inicializa as reservas filtradas
       } catch (error) {
         console.error("Erro ao carregar as reservas", error);
       }
     }
     fetchReservas();
   }, []);
-
-
-  
 
   // Função para adicionar nova reserva
   const handleAddReserva = async () => {
@@ -112,28 +105,6 @@ const RegisterReserva: React.FC = () => {
     setEditingReserva(null);
   };
 
-  // Função para aplicar os filtros
-  const applyFilters = () => {
-    let filtered = reservas;
-
-    // Filtrar por contato
-    if (contato) {
-      filtered = filtered.filter((reserva) => reserva.contato === contato);
-    }
-
-    // Filtrar por mesa
-    if (mesa) {
-      filtered = filtered.filter((reserva) => reserva.numeroMesa === parseInt(mesa));
-    }
-
-    setFilteredReservas(filtered);
-  };
-
-  useEffect(() => {
-    // Aplicar filtro sempre que 'contato' ou 'mesa' mudar
-    applyFilters();
-  }, [contato, mesa]);
-
   return (
     <Container>
       <Title>Registrar Reserva</Title>
@@ -144,33 +115,27 @@ const RegisterReserva: React.FC = () => {
           value={cliente}
           onChange={(e) => setCliente(e.target.value)}
         />
-        
-        {/* Dropdown para contato */}
-        <select value={contato} onChange={(e) => setContato(e.target.value)}>
-          <option value="">Selecione o Contato</option>
-          {distinctContatos.map((contatoItem) => (
-            <option key={contatoItem} value={contatoItem}>
-              {contatoItem}
-            </option>
-          ))}
-        </select>
-
+        <Input
+          type="text"
+          placeholder="Contato"
+          value={contato}
+          onChange={(e) => setContato(e.target.value)}
+        />
         {/* Dropdown para o número da mesa */}
         <select value={mesa} onChange={(e) => setMesa(e.target.value)}>
           <option value="">Selecione a Mesa</option>
-          {distinctMesas.map((mesaNum) => (
+          {/* Gerando números de 1 a 15 */}
+          {Array.from({ length: 15 }, (_, i) => i + 1).map((mesaNum) => (
             <option key={mesaNum} value={mesaNum}>
               Mesa {mesaNum}
             </option>
           ))}
         </select>
-
         <Input
           type="date"
           value={data}
           onChange={(e) => setData(e.target.value)}
         />
-
         {/* Dropdown para o status */}
         <select value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="Reservado">Reservado</option>
@@ -197,7 +162,7 @@ const RegisterReserva: React.FC = () => {
 
       <Title>Reservas Existentes</Title>
       <div>
-        {filteredReservas.map((reserva) => (
+        {reservas.map((reserva) => (
           <div key={reserva._id}>
             <p><strong>{reserva.cliente}</strong> - Mesa {reserva.numeroMesa}</p>
             <p>Data: {moment(reserva.date).format('YYYY-MM-DD')}</p> {/* Exibindo a data formatada */}
